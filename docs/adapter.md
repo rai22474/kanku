@@ -34,6 +34,9 @@ services:
       container: app              # the service whose log carries llm_call lines
       health: http://localhost:8060/health
       test: uv run --project app pytest tests/acceptance
+      env:                        # extra environment for the test command
+        ACCEPTANCE_API_BASE: http://localhost:8060
+      health_timeout: 200         # seconds
       full_stats: bash app/tests/acceptance/run_acceptance.sh all   # step 17
     side_effect_keys: [ADMIN_BOT_TOKEN, ADMIN_CHAT_ID]   # must resolve empty
     classify:                     # failure patterns, added to kanku's own
@@ -44,6 +47,7 @@ services:
 
 benchmark:
   repetitions: 3
+  results_dir: benchmark_results  # raw logs per run; keep it out of git
   command: null                   # set to replace kanku's runner entirely
 
 docs:
@@ -70,10 +74,11 @@ docs:
 | `catalog.max_unrated_days` | skills, validator | Age after which a missing index disqualifies. Default 90. |
 | `env_file` | runner | The file the containers read model variables from. The runner swaps the variable under test in it and restores it on exit, also on failure. |
 | `services.<name>.variables` | all | The model variables the service reads. Every other variable of the service is pinned during a benchmark (step 8). |
-| `services.<name>.acceptance` | runner | How to bring the service up and run its scenarios. Absent: the service is decided from the catalog. |
+| `services.<name>.acceptance` | runner | How to bring the service up and run its scenarios: `compose` files, the `container` whose log carries the `llm_call` lines, the `health` URL, the `test` command (kanku appends `-v -s --tb=short -p kanku_pytest_plugin -k <the dataset's scenarios>`), extra `env` for it, `health_timeout`. Absent: the service is decided from the catalog. |
 | `services.<name>.acceptance.full_stats` | skills | The full acceptance run with statistics, for step 17. |
 | `services.<name>.side_effect_keys` | runner | Keys that must resolve empty in the benchmark containers (step 10). |
 | `services.<name>.classify` | report | Extra failure patterns per class: `model`, `environment`. Controls come from the dataset. |
 | `benchmark.repetitions` | runner | Repetitions per candidate. Default 3. |
+| `benchmark.results_dir` | runner | Where raw logs go: `<results_dir>/<service>/<model>_<run id>/rep<n>/{pytest.log,container.log}`, plus `scenario_breakdown.md`. Default `benchmark_results`. |
 | `benchmark.command` | runner | The project's own runner, replacing kanku's. It receives the same arguments and must leave the same artifacts ([measurement.md](measurement.md)). |
 | `docs.*` | all | Paths of the [artifacts](artifacts/index.md). `decisions: null` uses sanchin's records when `.claude/sanchin.yaml` exists. `citing` lists globs of other pages to update and sweep. |

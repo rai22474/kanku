@@ -5,9 +5,9 @@ Real requirements · live catalog · benchmarks on your own acceptance suite · 
 
 ---
 
-> **Status: under construction (0.0.x).** The process and the document
-> formats are written; the runner, the validator and the skills come next.
-> Nothing here is installable yet.
+> **Status: under construction (0.0.x).** The process, the document
+> formats and the runner with its launch gates are written; the validator
+> and the skills come next. Nothing here is installable yet.
 
 An application with several LLM agents has to pick a model for each of them,
 and pick again every month: the catalog, the prices and the benchmark

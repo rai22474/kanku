@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Run kanku with a Python that has PyYAML.
+# Usage: scripts/kanku [--project DIR] gates|benchmark|report|trust ...
+# Prefers uv (no install needed); falls back to a python3 that already has it.
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+export PYTHONPATH="$script_dir${PYTHONPATH:+:$PYTHONPATH}"
+
+if command -v uv >/dev/null 2>&1; then
+  exec uv run --quiet --no-project --python '>=3.11' --with pyyaml python3 -m kanku_core "$@"
+fi
+exec python3 -m kanku_core "$@"
