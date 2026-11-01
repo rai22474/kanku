@@ -1,0 +1,15 @@
+{
+  "name": "kanku",
+  "description": "kanku: a repeatable model-selection process for LLM agents, for Claude Code.",
+  "owner": {
+    "name": "rai22474",
+    "url": "https://github.com/rai22474"
+  },
+  "plugins": [
+    {
+      "name": "kanku",
+      "source": "./",
+      "description": "A repeatable model-selection process for the LLM agents inside an application."
+    }
+  ]
+}

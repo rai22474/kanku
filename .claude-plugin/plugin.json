@@ -1,0 +1,21 @@
+{
+  "name": "kanku",
+  "displayName": "Kanku",
+  "version": "0.0.1",
+  "description": "A repeatable model-selection process for the LLM agents inside an application: inventory, catalog filtering, benchmarks against your own acceptance suite, and documented decisions, run unattended behind deterministic gates.",
+  "author": {
+    "name": "rai22474",
+    "url": "https://github.com/rai22474"
+  },
+  "homepage": "https://github.com/rai22474/kanku",
+  "repository": "https://github.com/rai22474/kanku",
+  "license": "MIT",
+  "keywords": [
+    "llm",
+    "model-selection",
+    "benchmark",
+    "openrouter",
+    "evaluation",
+    "cost"
+  ]
+}
