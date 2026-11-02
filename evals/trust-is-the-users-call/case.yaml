@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: trust-is-the-users-call
+tags: [trust]
+context:
+  scaffold_script: fixture.sh

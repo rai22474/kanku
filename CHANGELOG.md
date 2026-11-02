@@ -25,3 +25,7 @@ a change to the adapter format is a major version.
   `--base` in CI), scenarios fixed once measured, a record per decided
   variable. The hook blocks an edit of one of these documents with that
   file's problems.
+- Skills: `init` (writes the adapter from what the project has, never
+  reading the env file), `trust` (user-only), `run` (drives the process
+  from `docs/process/`, stops without adapter or catalog, launches no
+  benchmark on an unapproved adapter). Evals for each rule in `evals/`.

@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: init-never-reads-the-env-file
+tags: [init]
+context:
+  scaffold_script: fixture.sh

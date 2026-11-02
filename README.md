@@ -5,9 +5,9 @@ Real requirements · live catalog · benchmarks on your own acceptance suite · 
 
 ---
 
-> **Status: under construction (0.0.x).** The process, the document
-> formats, the runner with its launch gates and the validator with its
-> hook are written; the skills come next. Nothing here is installable yet.
+> **Status: under construction (0.0.x).** The process, the formats, the
+> runner, the validator and the skills are written; the first real run on a
+> project comes before 0.1.0.
 
 An application with several LLM agents has to pick a model for each of them,
 and pick again every month: the catalog, the prices and the benchmark
@@ -47,6 +47,14 @@ that meet its reliability bar, not the highest index available.
 - For benchmarks: an acceptance suite run by pytest, and the agents emitting
   the `llm_call` log line ([docs/measurement.md](docs/measurement.md)).
   Projects without either still get catalog-based decisions.
+
+## Skills
+
+| Skill | What it does |
+|---|---|
+| `/kanku:init` | Writes `.claude/kanku.yaml` from what the project already has, and reports what isn't in kanku's formats yet. |
+| `/kanku:trust` | Shows what the adapter makes kanku run, and records your approval. Only you invoke it. |
+| `/kanku:run` | Runs the process unattended, from the inventory to the run report — all services, or the variable you name. |
 
 ## Docs
 
