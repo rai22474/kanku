@@ -10,6 +10,7 @@
   "homepage": "https://github.com/rai22474/kanku",
   "repository": "https://github.com/rai22474/kanku",
   "license": "MIT",
+  "icon": "./assets/logo.svg",
   "keywords": [
     "llm",
     "model-selection",

@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.svg" alt="kanku" width="160"></p>
+
 <h1 align="center">kanku</h1>
 
 <p align="center"><b>A repeatable model-selection process for the LLM agents inside your application.</b><br>
