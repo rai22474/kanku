@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"${CLAUDE_PROJECT_DIR}/.claude/kanku.yaml\" ] || exit 0; \"${CLAUDE_PLUGIN_ROOT}\"/scripts/kanku --project \"${CLAUDE_PROJECT_DIR}\" hook",
+            "statusMessage": "kanku: checking the edited document...",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

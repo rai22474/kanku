@@ -50,8 +50,11 @@ def table_rows(block: str) -> list[list[str]]:
 
 
 def scenarios(path: Path, language: str) -> list[Scenario]:
+    return scenarios_in(path.read_text(encoding="utf-8"), language, str(path))
+
+
+def scenarios_in(text: str, language: str, path: str = "the dataset") -> list[Scenario]:
     w = words(language)
-    text = path.read_text(encoding="utf-8")
     section = next((s for s in sections(text) if s[0].startswith(w["scenarios"])), None)
     if section is None:
         raise DatasetError(f"{path}: no '## {w['scenarios']}' section")

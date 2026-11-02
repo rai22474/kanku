@@ -17,3 +17,11 @@ a change to the adapter format is a major version.
   scenarios) and the report (exact per-call latency, effective cost with
   cache, failure classes, the 16-column row, a per-scenario breakdown).
   Its tests include a real run whose recorded row the report reproduces.
+- `scripts/kanku check` and the `PostToolUse` hook: the validator of
+  `docs/artifacts/` — every adapter variable covered, candidate status
+  consistent with its table and decision, no pending word in a decided
+  section, result rows of one section measured on the same code, results,
+  history and revision entries only appended (against `HEAD`, or
+  `--base` in CI), scenarios fixed once measured, a record per decided
+  variable. The hook blocks an edit of one of these documents with that
+  file's problems.

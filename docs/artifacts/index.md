@@ -23,7 +23,25 @@ second set of documents.
 | [protocol.md](protocol.md) | The project's protocol log: environment conditions and every fix found by a run. | steps 10, 12 |
 | [run-report.md](run-report.md) | What one run did, self-contained. | end of the run |
 
+## Word sets
+
+| Key | `en` | `es` |
+|---|---|---|
+| Statuses | decided, pending, default | decidida, pendiente, por defecto |
+| Verdicts | chosen, finalist, discarded, unknown | elegido, finalista, descartado, desconocido |
+| Decision line | `Chosen: <model>` | `Elegido: <model>` |
+| Headings | Decision, Scenarios, Results, History, Revisions | Decisión, Escenarios, Resultados, Histórico, Revisiones |
+| Catalog date line | `Catalog read: <date>` | `Catálogo leído: <date>` |
+| Control column, yes | Control; yes, y, x, ✓ | Control; sí, si, x, ✓ |
+
+Headings are matched by their start (`## Results — \`APP_MODEL\``), so
+they can carry the variable. Index names (`agentic`, `intelligence`,
+`coding`) are the catalog's, in every language.
+
 ## What the validator checks
+
+In full: [validator.md](../validator.md).
+
 
 | Rule | Where | Gate |
 |---|---|---|

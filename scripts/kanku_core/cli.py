@@ -1,10 +1,11 @@
-"""Command line: `kanku gates`, `benchmark`, `report`, `trust`.
+"""Command line: `kanku check`, `gates`, `benchmark`, `report`, `trust`, `hook`.
 
 Run it through `scripts/kanku`, which finds a Python with PyYAML.
 Reference: docs/process/benchmark.md.
 """
 
 import argparse
+import json
 import shlex
 import subprocess
 import sys
@@ -13,6 +14,7 @@ from pathlib import Path
 
 from . import gates, runner
 from .config import AdapterError, load_config
+from .validate import check, kanku_documents
 from .dataset import DatasetError, scenarios
 from .report import Candidate
 from .trust import is_trusted, summary, trust
@@ -20,6 +22,8 @@ from .trust import is_trusted, summary, trust
 
 def main(argv: list[str] | None = None) -> int:
     arguments = _parser().parse_args(argv)
+    if arguments.handler is run_hook:
+        return run_hook(arguments)
     try:
         config = load_config(Path(arguments.project).resolve())
         return arguments.handler(config, arguments)
@@ -32,6 +36,14 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="kanku")
     parser.add_argument("--project", default=".")
     commands = parser.add_subparsers(required=True)
+
+    sub = commands.add_parser("check", help="validate the project's model documents")
+    sub.add_argument("--base", default="HEAD", help="git ref the append-only rules compare with (default HEAD; in CI, the target branch)")
+    sub.add_argument("--file", type=Path, help="report only the problems of this file")
+    sub.set_defaults(handler=run_check)
+
+    sub = commands.add_parser("hook", help="PostToolUse hook entry point (reads the hook payload on stdin)")
+    sub.set_defaults(handler=run_hook)
 
     def target(sub):
         sub.add_argument("--service", required=True)
@@ -121,3 +133,63 @@ def run_trust(config, arguments) -> int:
     else:
         print("kanku: approved" if is_trusted(config) else "kanku: NOT approved — /kanku:trust approves it")
     return 0
+
+
+def run_check(config, arguments) -> int:
+    problems = check(config, arguments.base)
+    if arguments.file:
+        relative = _relative(config, arguments.file.resolve())
+        problems = [problem for problem in problems if problem.startswith(f"{relative}:")]
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    if not problems:
+        print("kanku: documents OK")
+    return 1 if problems else 0
+
+
+def run_hook(arguments) -> int:
+    """PostToolUse: after an edit of one of kanku's documents, its problems block with a reason.
+
+    The project is the git working tree holding the edited file, so a
+    worktree's own adapter and documents apply.
+    """
+    payload = json.load(sys.stdin)
+    file_path = payload.get("tool_input", {}).get("file_path") or payload.get("tool_response", {}).get("filePath")
+    if not file_path:
+        return 0
+    absolute = Path(file_path).resolve()
+    project_root = _working_tree(absolute) or Path(arguments.project).resolve()
+    if not (project_root / ".claude" / "kanku.yaml").is_file():
+        return 0
+    try:
+        config = load_config(project_root)
+    except AdapterError as error:
+        print(f"kanku: {error}", file=sys.stderr)
+        return 1  # non-blocking, but seen: the checks are off until the adapter is fixed
+    if absolute not in {path.resolve() for path in kanku_documents(config)}:
+        return 0
+    relative = _relative(config, absolute)
+    problems = [problem for problem in check(config) if problem.startswith(f"{relative}:")]
+    if problems:
+        print(json.dumps({"decision": "block", "reason": f"kanku found problems in {relative}:\n" + "\n".join(problems)}))
+    return 0
+
+
+def _relative(config, path: Path) -> str:
+    return path.relative_to(config.project_root).as_posix() if path.is_relative_to(config.project_root) else str(path)
+
+
+def _working_tree(file: Path) -> Path | None:
+    directory = file.parent
+    while not directory.is_dir() and directory != directory.parent:
+        directory = directory.parent
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(directory), "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, timeout=10, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0 or not completed.stdout.strip():
+        return None
+    return Path(completed.stdout.strip()).resolve()
