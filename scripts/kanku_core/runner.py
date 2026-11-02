@@ -20,6 +20,7 @@ from pathlib import Path
 from . import envfile
 from .config import Config, Service
 from .dataset import Scenario, append_row, selection
+from .gates import compose_command
 from .language import words
 from .report import Candidate, aggregate, breakdown, read_repetition, row_cells
 
@@ -32,8 +33,7 @@ def log(message: str) -> None:
 
 
 def compose(config: Config, service: Service, *args: str, **kwargs) -> subprocess.CompletedProcess:
-    files = [arg for path in service.acceptance.compose for arg in ("-f", path)]
-    return subprocess.run(["docker", "compose", *files, *args], cwd=config.project_root, check=False, **kwargs)
+    return subprocess.run([*compose_command(config, service), *args], cwd=config.project_root, check=False, **kwargs)
 
 
 def wait_healthy(url: str, timeout: int) -> bool:
@@ -66,10 +66,9 @@ def repetition(config: Config, service: Service, scenarios: list[Scenario], out:
     try:
         if not wait_healthy(acceptance.health, acceptance.health_timeout):
             raise RuntimeError(f"{acceptance.health} did not become healthy in {acceptance.health_timeout}s")
-        files = [arg for path in acceptance.compose for arg in ("-f", path)]
         with open(out / "container.log", "w", encoding="utf-8") as container_log:
             follower = subprocess.Popen(
-                ["docker", "compose", *files, "logs", "-f", "--timestamps", acceptance.container],
+                [*compose_command(config, service), "logs", "-f", "--timestamps", acceptance.container],
                 cwd=config.project_root, stdout=container_log, stderr=subprocess.STDOUT,
             )
             try:

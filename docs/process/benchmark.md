@@ -60,7 +60,7 @@ comparable, and the date of the dataset is what keeps them apart.
 
 ## Step 10 — Check the environment before launching
 
-Before any benchmark or acceptance run — the first three are launch gates
+Before any benchmark or acceptance run — the first four are launch gates
 the runner enforces:
 
 - **Nothing else running** on the same compose project name or host port.
@@ -77,7 +77,10 @@ the runner enforces:
   `docker compose config --format json` and reporting only empty or not.
   *Why:* a printed configuration puts every secret into the session history.
 - The variable under test reaches the container through the file the
-  container reads (`env_file`), not only through the shell that launches it.
+  container reads, not through the shell that launches it nor a value the
+  compose file sets (a launch gate). *Why:* a variable that doesn't reach
+  the container makes every candidate run the same model, and the rows
+  look like a real comparison.
 - Known environment regressions in the protocol log are checked before a
   new failure is blamed on a model.
 

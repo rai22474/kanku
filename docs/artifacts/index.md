@@ -52,3 +52,4 @@ In full: [validator.md](../validator.md).
 | Result sections, history sections and decision records are only appended to. | dataset, decisions | validator |
 | Every other model variable of the service is set explicitly before a run. | environment | runner (step 8) |
 | No other run on the same compose project or port; side-effect keys resolve empty. | environment | runner (step 10) |
+| The variable under test reaches the container from the env file. | environment | runner (step 10) |

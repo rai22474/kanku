@@ -18,6 +18,8 @@ from .config import Config, Service
 from .dataset import DatasetError, check_results_table
 from .trust import is_trusted
 
+REACH_MARKER = "kanku/reach-check"
+
 
 @dataclass(frozen=True)
 class Problem:
@@ -45,16 +47,46 @@ def pinned(config: Config, service: Service, variable: str, allow_unset: tuple[s
     return problems, "; ".join(cells) or "—"
 
 
+def compose_command(config: Config, service: Service) -> list[str]:
+    """`docker compose` with the stack's files, interpolating from the adapter's env file.
+
+    The env file is the one the runner swaps, so `${VAR}` in a compose file
+    sees the candidate as well as `env_file:` does.
+    """
+    command = ["docker", "compose"]
+    if config.env_file.is_file():
+        command += ["--env-file", str(config.env_file)]
+    return command + [arg for path in service.acceptance.compose for arg in ("-f", path)]
+
+
 def compose_config(config: Config, service: Service, runner=subprocess.run) -> dict:
     """The resolved compose configuration. It holds secrets: keep it in memory, never print it."""
-    files = [arg for path in service.acceptance.compose for arg in ("-f", path)]
     completed = runner(
-        ["docker", "compose", *files, "config", "--format", "json"],
+        [*compose_command(config, service), "config", "--format", "json"],
         cwd=config.project_root, capture_output=True, text=True, check=False,
     )
     if completed.returncode != 0:
         raise RuntimeError("docker compose config failed (output withheld: it may hold secrets)")
     return json.loads(completed.stdout)
+
+
+def reaches(resolved: dict, service: Service, variable: str, expected: str) -> list[Problem]:
+    """Step 10: the variable under test reaches the container from the env file.
+
+    Checked with a marker value swapped into the env file: anything else in
+    the container — a value the compose file sets, a variable it never
+    passes — means every candidate would run the same model, silently.
+    """
+    definition = (resolved.get("services") or {}).get(service.acceptance.container)
+    if definition is None:
+        return [Problem("reaches", f"the compose stack has no service '{service.acceptance.container}' (acceptance.container)")]
+    environment = definition.get("environment") or {}
+    if isinstance(environment, list):
+        environment = dict(item.split("=", 1) if "=" in item else (item, "") for item in environment)
+    if environment.get(variable) != expected:
+        how = "is not passed to it" if variable not in environment else "gets a value the env file doesn't control (set under environment:?)"
+        return [Problem("reaches", f"{variable} doesn't reach '{service.acceptance.container}' from the env file: it {how} — every candidate would run the same model")]
+    return []
 
 
 def side_effects(resolved: dict, service: Service) -> list[Problem]:
@@ -129,10 +161,12 @@ def launch(config: Config, service: Service, variable: str, dataset: Path, allow
     if config.command:
         return problems, others
     try:
-        resolved = compose_config(config, service, runner)
-    except (RuntimeError, ValueError) as error:
+        with envfile.swapped(config.env_file, variable, REACH_MARKER):
+            resolved = compose_config(config, service, runner)
+    except (RuntimeError, ValueError, OSError) as error:
         problems.append(Problem("compose", str(error)))
         return problems, others
+    problems += reaches(resolved, service, variable, REACH_MARKER)
     problems += side_effects(resolved, service)
     problems += nothing_running(resolved, service, running_projects(runner), in_use)
     return problems, others

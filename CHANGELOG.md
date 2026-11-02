@@ -29,3 +29,9 @@ a change to the adapter format is a major version.
   reading the env file), `trust` (user-only), `run` (drives the process
   from `docs/process/`, stops without adapter or catalog, launches no
   benchmark on an unapproved adapter). Evals for each rule in `evals/`.
+- Launch gate `reaches`: the variable under test must reach the container
+  from the env file (checked with a marker value swapped in). Without it, a
+  compose file that sets the variable itself — or never passes it — makes
+  every candidate run the same model while the rows look like a real
+  comparison. Every `docker compose` call now gets `--env-file`, so `${VAR}`
+  interpolation sees the swapped value too.

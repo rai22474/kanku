@@ -2,6 +2,7 @@ import io
 import json
 import subprocess
 import unittest
+from pathlib import Path
 from contextlib import redirect_stderr, redirect_stdout
 
 from fixture import Project
@@ -26,12 +27,22 @@ def resolved(name="acceptance", bot_token="", port=8060):
 REAL_RUN = subprocess.run
 
 
-def fake_docker(config_json, running=()):
+def fake_docker(config_json, running=(), wiring="env_file"):
+    """docker that resolves APP_MODEL in the app container as the stack would wire it."""
     def run(command, **kwargs):
         if command[0] != "docker":
             return REAL_RUN(command, **kwargs)
         if command[-3:] == ["config", "--format", "json"]:
-            return subprocess.CompletedProcess(command, 0, json.dumps(config_json), "")
+            assert "--env-file" in command, command
+            env_file = command[command.index("--env-file") + 1]
+            current = dict(line.split("=", 1) for line in Path(env_file).read_text(encoding="utf-8").splitlines() if "=" in line)
+            stack = json.loads(json.dumps(config_json))
+            environment = stack["services"]["app"]["environment"]
+            if wiring == "env_file":
+                environment["APP_MODEL"] = current.get("APP_MODEL", "")
+            elif wiring == "hardcoded":
+                environment["APP_MODEL"] = "openai/fake-model"
+            return subprocess.CompletedProcess(command, 0, json.dumps(stack), "")
         if command[:3] == ["docker", "compose", "ls"]:
             return subprocess.CompletedProcess(command, 0, json.dumps([{"Name": n} for n in running]), "")
         raise AssertionError(command)
@@ -47,8 +58,16 @@ class LaunchTest(unittest.TestCase):
     def tearDown(self):
         self.project.close()
 
-    def launch(self, config_json=None, running=(), in_use=lambda port: False, allow_unset=()):
-        return gates.launch(self.config, self.service, "APP_MODEL", self.project.dataset, allow_unset, fake_docker(config_json or resolved(), running), in_use)
+    def launch(self, config_json=None, running=(), in_use=lambda port: False, allow_unset=(), wiring="env_file"):
+        return gates.launch(self.config, self.service, "APP_MODEL", self.project.dataset, allow_unset, fake_docker(config_json or resolved(), running, wiring), in_use)
+
+    def test_variable_that_does_not_reach_the_container(self):
+        trust(self.config)
+        for wiring, how in (("hardcoded", "doesn't control"), ("missing", "is not passed")):
+            problems, _ = self.launch(wiring=wiring)
+            self.assertEqual([p.gate for p in problems], ["reaches"], wiring)
+            self.assertIn(how, str(problems[0]))
+        self.assertIn("APP_MODEL=a/base\n", self.project.root.joinpath(".env").read_text(encoding="utf-8"), "the env file is restored")
 
     def test_untrusted_adapter_stops_everything(self):
         problems, _ = self.launch()
